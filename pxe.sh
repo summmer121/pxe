@@ -92,6 +92,7 @@ subnet $subnet netmask 255.255.255.0 {
 EOF
 ##判断dhcp服务起来没有#############
 systemctl restart dhcpd>/dev/null  
+systemctl enable xinetd>/dev/null
 systemctl status dhcpd>/dev/null
 if [ $? -eq 0 ];then
 	echo -e "  dhcp服务    \033[32m 启动成功 \033[0m    "
@@ -108,6 +109,7 @@ else
 	echo -e "  xinetd服务    \033[31m 设置失败 \033[0m    "
 fi
 systemctl restart xinetd>/dev/null
+systemctl enable xinetd>/dev/null
 systemctl status xinetd>/dev/null
 if [ $? -eq 0 ];then
         echo -e "xinetd服务    \033[32m 启动成功 \033[0m    "
@@ -135,6 +137,7 @@ else
 fi
 
 systemctl restart tftp>/dev/null
+systemctl enable tftp>/dev/null
 systemctl status  tftp>/dev/null
 if [ $? -eq 0 ];then
         echo -e "  tftp服务    \033[32m 启动成功 \033[0m    "
@@ -220,6 +223,7 @@ else
 fi
 
 systemctl restart vsftpd>/dev/null
+systemctl enable vsftpd>/dev/null
 systemctl status  vsftpd>/dev/null
 if [ $? -eq 0 ];then
         echo -e "   ftp服务    \033[32m 启动成功 \033[0m    "
