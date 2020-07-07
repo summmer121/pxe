@@ -272,7 +272,8 @@ do
 done
 systemctl stop firewalld>/dev/null
 setenforce 0
-chmod -R  +r  /var
+chmod -R  755  /var/ftp
+chmod -R  755  /var/lib/tftpboot
 echo -e "      防火墙    \033[32m 关闭成功 \033[0m "    
 echo "-------------------pxe服务端部署完成-----------------"
 
