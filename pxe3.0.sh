@@ -4,7 +4,7 @@
 echo "##############################################"
 echo "##      一键部署pxe脚本 使用注意事项       ###"
 echo "##        1：确保本地yum源设置ok           ###"
-echo "##        2：将镜像挂载到/mnt目录下        ###"
+echo "##        2：将多个镜像挂载到/mnt子文件夹  ###"
 echo "##        3：所有服务器业务网ip相通        ###"
 echo "##        4：会自动使用root目录下的        ###"
 echo "##        anaconda-ks.cfg应答文件，        ###"
@@ -252,17 +252,8 @@ else
 			break
 		fi	
 	done	
-
-	
-
-
-
-	ftp_num=$(ls /var/ftp |wc -l)
-        if [ $ftp_num -gt 4 ];then
         	echo -e "\033[32m 镜像文件已成功复制到ftp目录下 \033[0m    "
-	else
-        	echo -e "\033[31m 镜像文件复制到ftp目录失败 \033[0m    "
-	fi
+
 fi
 
 systemctl restart vsftpd>/dev/null
@@ -295,13 +286,8 @@ sed -i "s/^graphical.*$/text/g" /var/ftp/pub/$i.cfg
 done
 
 
+echo -e "  应答文件    \033[32m 设置成功 \033[0m    "
 
-grep 'reboot' /var/ftp/pub/ks.cfg >/dev/null
-if [ $? -eq 0 ];then
-        echo -e "  应答文件    \033[32m 设置成功 \033[0m    "
-else
-        echo -e "  应答文件    \033[31m 设置失败 \033[0m    "
-fi
 
 
 ####################################检查所有服务是否启动成功#############################
