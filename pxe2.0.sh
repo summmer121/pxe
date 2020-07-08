@@ -69,8 +69,6 @@ option architecture-type code 93 = unsigned integer 16;
 EOF
 for i in ${ip_list[*]}
 do
-echo $i
-
 subnet=${i%%$(echo $i |awk -F. '{print $4}')}"0"
 range1=${i%%$(echo $i |awk -F. '{print $4}')}"10"
 range2=${i%%$(echo $i |awk -F. '{print $4}')}"254"
@@ -85,8 +83,7 @@ subnet $subnet netmask 255.255.255.0 {
        } 
   else {
        filename "pxelinux.0";
-       }
-        
+       }  
 }
 EOF
 done
@@ -139,45 +136,70 @@ menu helpmsgrow 15
 menu tabmsgrow 13
 EOF
 
+cat>/var/lib/tftpboot/grub.cfg<<EOF
+set default="0"
+function load_video {
+  insmod efi_gop
+  insmod efi_uga
+  insmod video_bochs
+  insmod video_cirrus
+  insmod all_video
+}
+load_video
+set gfxpayload=keep
+insmod gzio
+insmod part_gpt
+insmod ext2
+set timeout=5000
+search --no-floppy --set=root -l 'BCLinux 7 x86_64'
+EOF
 
+
+############## 设置legacy 和 uefi 启动文件
+sys=()
+n=1
 for file in `ls /mnt`
 do
 if [ -d "/mnt/$file" ];then
-        echo file is  $file
+	sys[$n]=$file
+	n=$[$n+1]
         mkdir -p /var/lib/tftpboot/$file
         cp /usr/share/syslinux/pxelinux.0  /var/lib/tftpboot
         cp /mnt/$file/images/pxeboot/{vmlinuz,initrd.img} /var/lib/tftpboot/$file
         cp /mnt/$file/isolinux/{vesamenu.c32,boot.msg} /var/lib/tftpboot
-        cp /mnt/$file/EFI/BOOT/{BOOTX64.EFI,grub.cfg,grubx64.efi} /var/lib/tftpboot/$file
+        cp /mnt/$file/EFI/BOOT/grubx64.efi /var/lib/tftpboot
+	cp /mnt/$file/EFI/BOOT/BOOTX64.EFI /var/lib/tftpboot/bootx64.efi
+####legacy启动菜单
         echo "label $file
-menu label ^Install $file  
+menu label ^Install $file 
 kernel $file/vmlinuz
-append initrd=$file/initrd.img inst.stage2=ftp://10.0.0.10/$file ks=ftp://10.0.0.10/pub/$file.cfg quiet">>/var/lib/tftpboot/pxelinux.cfg/default
-
+append initrd=$file/initrd.img inst.stage2=ftp://$ip/$file ks=ftp://$ip/pub/$file.cfg quiet">>/var/lib/tftpboot/pxelinux.cfg/default
+#####efi启动菜单
+	echo "menuentry 'Install $file' --class fedora --class gnu-linux --class gnu --class os {
+  linuxefi  (tftp)/$file/vmlinuz inst.repo=ftp://$ip/$file ks=ftp://$ip/pub/$file.cfg  ip=dhcp    
+  initrdefi (tftp)/$file/initrd.img
+}" >>/var/lib/tftpboot/grub.cfg
 fi
 done
+n=1
+echo '/mnt目录下有如下系统：'
+for i in ${sys[*]}
+do
+echo $n.$i
+n=$[$n+1]
+done
+read -p "请设置默认安装系统（1、2、3等）:"  m
+s="${sys[$m]}"
+sed -i "/$s\/vmlinuz/i\\menu default"  /var/lib/tftpboot/pxelinux.cfg/default
+m=$[$m-1]
+sed -i "1c set default=$m"  /var/lib/tftpboot/grub.cfg
 
 
 
 
 
-
-###############设置syslinux服务###########
-# cp /usr/share/syslinux/pxelinux.0  /var/lib/tftpboot
-# cp /mnt/images/pxeboot/{vmlinuz,initrd.img} /var/lib/tftpboot
-# cp /mnt/isolinux/{vesamenu.c32,boot.msg} /var/lib/tftpboot
-cp /mnt/EFI/BOOT/BOOTX64.EFI       /var/lib/tftpboot/bootx64.efi
-cp /mnt/EFI/BOOT/grub.cfg               /var/lib/tftpboot/grub.cfg  
-cp /mnt/EFI/BOOT/grubx64.efi       /var/lib/tftpboot/grubx64.efi
-mkdir -p /var/lib/tftpboot/pxelinux.cfg
-cp /mnt/isolinux/isolinux.cfg /var/lib/tftpboot/pxelinux.cfg/default
-
-# num=$(ls /var/lib/tftpboot |wc -l)
-# if [ $num -gt 6 ];then
 echo -e "\033[32m 引导文件已成功复制到tftp目录下 \033[0m    "
-# else
-#         echo -e "\033[31m 引导文件复制到tftp目录失败 \033[0m    "
-# fi
+
 
 systemctl restart tftp>/dev/null
 systemctl enable tftp>/dev/null
@@ -193,33 +215,6 @@ fi
 
 
 
-#######bios启动  修改pxelinux.cfg文件 ################
-# sed -i '1c default linux' /var/lib/tftpboot/pxelinux.cfg/default
-# sed -i '2c timeout 5' /var/lib/tftpboot/pxelinux.cfg/default
-# sed  -i "0,/^.*append.*$/s// append initrd=initrd.img inst.stage2=ftp:\/\/$ip ks=ftp:\/\/$ip\/pub\/ks.cfg quiet  /" /var/lib/tftpboot/pxelinux.cfg/default
-
-# grep "$ip" /var/lib/tftpboot/pxelinux.cfg/default>/dev/null
-# if [ $? -eq 0 ];then
-#         echo -e "  bios引导文件   \033[32m 设置成功 \033[0m    "
-# else
-#         echo -e "  bios引导文件    \033[31m 设置失败 \033[0m    "
-# fi
-
-
-
-
-#######uefi启动  修改grub.cfg文件
-sed  -i 's/default="1"/default="0"/g' /var/lib/tftpboot/grub.cfg
-sed  -i 's/timeout=60/timeout=5/g' /var/lib/tftpboot/grub.cfg
-sed  -i  "0,/^.*linuxefi.*$/s//   linuxefi  (tftp)\/vmlinuz inst.repo=ftp:\/\/$ip ks=ftp:\/\/$ip\/pub\/ks.cfg  ip=dhcp    /" /var/lib/tftpboot/grub.cfg
-sed  -i "0,/^.*initrdefi.*$/s//  initrdefi (tftp)\/initrd.img   /" /var/lib/tftpboot/grub.cfg
-
-grep '(tftp)/initrd.img ' /var/lib/tftpboot/grub.cfg>/dev/null
-if [ $? -eq 0 ];then
-        echo -e "  uefi引导文件   \033[32m 设置成功 \033[0m    "
-else
-        echo -e "  uefi引导文件    \033[31m 设置失败 \033[0m    "
-fi
 
 
 ############################复制镜像到ftp目录下##############################
@@ -288,13 +283,18 @@ if [ ! -d "/var/ftp/pub" ]; then
 fi
 cp /root/info /var/ftp/pub/info
 cp /root/init.py /var/ftp/pub/
-cp /root/network.sh /var/ftp/pub/
-cp /root/anaconda-ks.cfg /var/ftp/pub/ks.cfg
-chmod +r /var/ftp/pub/ks.cfg
-sed -i "s/cdrom/url --url=ftp:\/\/$ip/g" /var/ftp/pub/ks.cfg
-sed -i "s/# System timezone/reboot/g" /var/ftp/pub/ks.cfg
-sed -i "s/--none/--all/g" /var/ftp/pub/ks.cfg
-sed -i "s/^graphical.*$/text/g" /var/ftp/pub/ks.cfg
+
+for i in ${sys[*]}
+do
+cp /root/anaconda-ks.cfg /var/ftp/pub/$i.cfg
+chmod +r /var/ftp/pub/$i.cfg
+sed -i "s/cdrom/url --url=ftp:\/\/$ip\/$i/g" /var/ftp/pub/$i.cfg
+sed -i "s/# System timezone/reboot/g" /var/ftp/pub/$i.cfg
+sed -i "s/--none/--all/g" /var/ftp/pub/$i.cfg
+sed -i "s/^graphical.*$/text/g" /var/ftp/pub/$i.cfg
+done
+
+
 
 grep 'reboot' /var/ftp/pub/ks.cfg >/dev/null
 if [ $? -eq 0 ];then
