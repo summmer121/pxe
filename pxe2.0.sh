@@ -122,22 +122,62 @@ fi
 
 
 
+
+
+mkdir -p /var/lib/tftpboot/pxelinux.cfg
+cat>/var/lib/tftpboot/pxelinux.cfg/default<<EOF
+default vesamenu.c32
+timeout 600
+display boot.msg
+menu clear
+menu background splash.png
+menu title install  linux  by summer  
+menu vshift 8
+menu rows 18
+menu margin 8
+menu helpmsgrow 15
+menu tabmsgrow 13
+EOF
+
+
+for file in `ls /mnt`
+do
+if [ -d "/mnt/$file" ];then
+        echo file is  $file
+        mkdir -p /var/lib/tftpboot/$file
+        cp /usr/share/syslinux/pxelinux.0  /var/lib/tftpboot
+        cp /mnt/$file/images/pxeboot/{vmlinuz,initrd.img} /var/lib/tftpboot/$file
+        cp /mnt/$file/isolinux/{vesamenu.c32,boot.msg} /var/lib/tftpboot
+        cp /mnt/$file/EFI/BOOT/{BOOTX64.EFI,grub.cfg,grubx64.efi} /var/lib/tftpboot/$file
+        echo "label $file
+menu label ^Install $file  
+kernel $file/vmlinuz
+append initrd=$file/initrd.img inst.stage2=ftp://10.0.0.10/$file ks=ftp://10.0.0.10/pub/$file.cfg quiet">>/var/lib/tftpboot/pxelinux.cfg/default
+
+fi
+done
+
+
+
+
+
+
 ###############设置syslinux服务###########
-cp /usr/share/syslinux/pxelinux.0  /var/lib/tftpboot
-cp /mnt/images/pxeboot/{vmlinuz,initrd.img} /var/lib/tftpboot
-cp /mnt/isolinux/{vesamenu.c32,boot.msg} /var/lib/tftpboot
+# cp /usr/share/syslinux/pxelinux.0  /var/lib/tftpboot
+# cp /mnt/images/pxeboot/{vmlinuz,initrd.img} /var/lib/tftpboot
+# cp /mnt/isolinux/{vesamenu.c32,boot.msg} /var/lib/tftpboot
 cp /mnt/EFI/BOOT/BOOTX64.EFI       /var/lib/tftpboot/bootx64.efi
 cp /mnt/EFI/BOOT/grub.cfg               /var/lib/tftpboot/grub.cfg  
 cp /mnt/EFI/BOOT/grubx64.efi       /var/lib/tftpboot/grubx64.efi
 mkdir -p /var/lib/tftpboot/pxelinux.cfg
 cp /mnt/isolinux/isolinux.cfg /var/lib/tftpboot/pxelinux.cfg/default
 
-num=$(ls /var/lib/tftpboot |wc -l)
-if [ $num -gt 6 ];then
-        echo -e "\033[32m 引导文件已成功复制到tftp目录下 \033[0m    "
-else
-        echo -e "\033[31m 引导文件复制到tftp目录失败 \033[0m    "
-fi
+# num=$(ls /var/lib/tftpboot |wc -l)
+# if [ $num -gt 6 ];then
+echo -e "\033[32m 引导文件已成功复制到tftp目录下 \033[0m    "
+# else
+#         echo -e "\033[31m 引导文件复制到tftp目录失败 \033[0m    "
+# fi
 
 systemctl restart tftp>/dev/null
 systemctl enable tftp>/dev/null
@@ -148,17 +188,22 @@ else
         echo -e "  tftp服务    \033[31m 启动失败 \033[0m    "
 fi
 
-#######bios启动  修改pxelinux.cfg文件 ################
-sed -i '1c default linux' /var/lib/tftpboot/pxelinux.cfg/default
-sed -i '2c timeout 5' /var/lib/tftpboot/pxelinux.cfg/default
-sed  -i "0,/^.*append.*$/s// append initrd=initrd.img inst.stage2=ftp:\/\/$ip ks=ftp:\/\/$ip\/pub\/ks.cfg quiet  /" /var/lib/tftpboot/pxelinux.cfg/default
 
-grep "$ip" /var/lib/tftpboot/pxelinux.cfg/default>/dev/null
-if [ $? -eq 0 ];then
-        echo -e "  bios引导文件   \033[32m 设置成功 \033[0m    "
-else
-        echo -e "  bios引导文件    \033[31m 设置失败 \033[0m    "
-fi
+
+
+
+
+#######bios启动  修改pxelinux.cfg文件 ################
+# sed -i '1c default linux' /var/lib/tftpboot/pxelinux.cfg/default
+# sed -i '2c timeout 5' /var/lib/tftpboot/pxelinux.cfg/default
+# sed  -i "0,/^.*append.*$/s// append initrd=initrd.img inst.stage2=ftp:\/\/$ip ks=ftp:\/\/$ip\/pub\/ks.cfg quiet  /" /var/lib/tftpboot/pxelinux.cfg/default
+
+# grep "$ip" /var/lib/tftpboot/pxelinux.cfg/default>/dev/null
+# if [ $? -eq 0 ];then
+#         echo -e "  bios引导文件   \033[32m 设置成功 \033[0m    "
+# else
+#         echo -e "  bios引导文件    \033[31m 设置失败 \033[0m    "
+# fi
 
 
 
