@@ -124,7 +124,7 @@ fi
 mkdir -p /var/lib/tftpboot/pxelinux.cfg
 cat>/var/lib/tftpboot/pxelinux.cfg/default<<EOF
 default vesamenu.c32
-timeout 600
+timeout 20
 display boot.msg
 menu clear
 menu background splash.png
@@ -150,7 +150,7 @@ set gfxpayload=keep
 insmod gzio
 insmod part_gpt
 insmod ext2
-set timeout=5000
+set timeout=20
 search --no-floppy --set=root -l 'BCLinux 7 x86_64'
 EOF
 
