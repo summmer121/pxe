@@ -161,6 +161,7 @@ n=1
 for file in `ls /mnt`
 do
 if [ -d "/mnt/$file" ];then
+    if [ -d "/mnt/$file/isolinux" ];then
 	sys[$n]=$file
 	n=$[$n+1]
         mkdir -p /var/lib/tftpboot/$file
@@ -179,6 +180,7 @@ append initrd=$file/initrd.img inst.stage2=ftp://$ip/$file ks=ftp://$ip/pub/$fil
   linuxefi  (tftp)/$file/vmlinuz inst.repo=ftp://$ip/$file ks=ftp://$ip/pub/$file.cfg  ip=dhcp    
   initrdefi (tftp)/$file/initrd.img
 }" >>/var/lib/tftpboot/grub.cfg
+    fi
 fi
 done
 n=1
@@ -218,11 +220,8 @@ fi
 
 
 ############################复制镜像到ftp目录下##############################
-ftp_num=$(ls /var/ftp |wc -l)
-if [ $ftp_num -gt 4 ];then
-        echo -e "\033[32m 镜像文件已成功复制到ftp目录下 \033[0m    "
-else
-	nohup cp -r /mnt/* /var/ftp/>/dev/null 2>&1 &  
+
+	nohup cp -rn /mnt/* /var/ftp/>/dev/null 2>&1 &  
 	sleep 3
 	while :
 	do
@@ -254,7 +253,6 @@ else
 	done	
         	echo -e "\033[32m 镜像文件已成功复制到ftp目录下 \033[0m    "
 
-fi
 
 systemctl restart vsftpd>/dev/null
 systemctl enable vsftpd>/dev/null
