@@ -277,10 +277,12 @@ for i in ${sys[*]}
 do
 cp /root/anaconda-ks.cfg /var/ftp/pub/$i.cfg
 chmod +r /var/ftp/pub/$i.cfg
-sed -i "s/cdrom/url --url=ftp:\/\/$ip\/$i/g" /var/ftp/pub/$i.cfg
+sed -i "/Use.*installation/{n;s/^.*$/url --url=ftp:\/\/$ip\/$i/g}" test
 sed -i "s/# System timezone/reboot/g" /var/ftp/pub/$i.cfg
 sed -i "s/--none/--all/g" /var/ftp/pub/$i.cfg
 sed -i "s/^graphical.*$/text/g" /var/ftp/pub/$i.cfg
+sed -i "s/ftp:\/\/[^\/]*/ftp:\/\/$ip/g" /var/ftp/pub/$i.cfg
+
 done
 
 
