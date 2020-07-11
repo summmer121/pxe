@@ -272,12 +272,13 @@ if [ ! -d "/var/ftp/pub" ]; then
 fi
 cp /root/info /var/ftp/pub/info
 cp /root/init.py /var/ftp/pub/
+cp /root/auto.sh /var/ftp/pub/
 
 for i in ${sys[*]}
 do
 cp /root/anaconda-ks.cfg /var/ftp/pub/$i.cfg
 chmod +r /var/ftp/pub/$i.cfg
-sed -i "/Use.*installation/{n;s/^.*$/url --url=ftp:\/\/$ip\/$i/g}" test
+sed -i "/Use.*installation/{n;s/^.*$/url --url=ftp:\/\/$ip\/$i/g}" /var/ftp/pub/$i.cfg
 sed -i "s/# System timezone/reboot/g" /var/ftp/pub/$i.cfg
 sed -i "s/--none/--all/g" /var/ftp/pub/$i.cfg
 sed -i "s/^graphical.*$/text/g" /var/ftp/pub/$i.cfg
