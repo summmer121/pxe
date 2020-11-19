@@ -266,7 +266,9 @@ do
         fi
 done
 systemctl stop firewalld>/dev/null
+systemctl disable firewalld>/dev/null
 setenforce 0
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g'  /etc/selinux/config
 chmod -R  755  /var/ftp
 chmod -R  755  /var/lib/tftpboot
 echo -e "      防火墙    \033[32m 关闭成功 \033[0m "    
