@@ -24,7 +24,7 @@ range1=${ip%%$(echo $ip |awk -F. '{print $4}')}"10"
 range2=${ip%%$(echo $ip |awk -F. '{print $4}')}"254"
 
 
-######################  设置pxe部署方式： bios启动  usef启动    
+######################  设置pxe部署方式： bios启动  usef启动     ####已优化为自适应启动方式
 <<COMMENT
 n=1
 cfg='pxelinux.0'
@@ -51,7 +51,7 @@ COMMENT
 
 
 
-###########安装pxe需要的基础服务
+###########安装pxe需要的基础服务    dhcp xinetd tftp-server syslinux vsftpd tcpdump
 yum install -y dhcp xinetd tftp-server syslinux vsftpd tcpdump >/dev/null
 echo "-----------------检查是否安装完成----------------"
 for i in {'dhcp','xinetd','tftp-server','vsftpd','syslinux','tcpdump'}
@@ -119,7 +119,7 @@ fi
 
 
 
-###############设置syslinux服务###########
+###############设置syslinux服务  设置tftp，准备linux内核 初始化镜像文件###########
 cp /usr/share/syslinux/pxelinux.0  /var/lib/tftpboot
 cp /mnt/images/pxeboot/{vmlinuz,initrd.img} /var/lib/tftpboot
 cp /mnt/isolinux/{vesamenu.c32,boot.msg} /var/lib/tftpboot
